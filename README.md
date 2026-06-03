@@ -35,8 +35,8 @@ O Linux não roda `.exe`. Você precisa baixar o binário nativo do LiveKit na p
 # Certifique-se de estar na raiz do projeto (MulitCam)
 mkdir -p desktop-app/build
 
-# Baixa o LiveKit do Linux direto do GitHub oficial
-curl -L https://github.com/livekit/livekit/releases/download/v1.5.2/livekit-server_1.5.2_linux_amd64.tar.gz -o livekit.tar.gz
+# Baixa o LiveKit do Linux direto do GitHub oficial (Versão 1.12.0)
+curl -L https://github.com/livekit/livekit/releases/download/v1.12.0/livekit_1.12.0_linux_amd64.tar.gz -o livekit.tar.gz
 
 # Extrai o arquivo
 tar -xzf livekit.tar.gz livekit-server
