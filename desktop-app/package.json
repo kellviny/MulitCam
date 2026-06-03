@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "tsc && electron .",
     "dist": "tsc && electron-builder --win --config electron-builder.config.js",
+    "dist:linux": "tsc && electron-builder --linux --config electron-builder.config.js",
+    "dist:mac": "tsc && electron-builder --mac --config electron-builder.config.js",
     "build": "tsc"
   },
   "dependencies": {
