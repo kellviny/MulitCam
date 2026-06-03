@@ -1,7 +1,8 @@
 {
   "name": "multicam-desktop",
   "version": "1.0.0",
-  "author": "MultiCam Inc",
+  "author": "Kellviny <kellviny@example.com>",
+  "homepage": "https://github.com/kellviny/MulitCam",
   "description": "Sistema de transmissao local",
   "main": "dist/main.js",
   "scripts": {
