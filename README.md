@@ -1,69 +1,62 @@
-# MultiCam Live 📡
+# MultiCam Live System
 
-Sistema de transmissão ao vivo com múltiplos celulares via rede local privada, usando WebRTC + SFU para máxima performance com mínimo uso de rede. Integração direta com OBS Studio via Browser Source.
+O **MultiCam Live** é um sistema profissional e de ultra-baixa latência desenvolvido para transformar smartphones (iPhones e Androids) em câmeras sem fio de alta qualidade para transmissões ao vivo. Focado 100% em rede local (Wi-Fi), ele elimina a necessidade de fios e placas de captura, entregando o vídeo diretamente para softwares de transmissão como o **OBS Studio**.
 
-## Requisitos
+### Como Funciona:
+O sistema é dividido em três módulos principais que operam em harmonia através da tecnologia **WebRTC (LiveKit)** embutida:
 
-1. **Node.js** v18+
-2. **LiveKit Server**
-   - No Windows: Pode ser instalado via winget (`winget install LiveKit.LiveKit`) ou baixando o `.exe` de [LiveKit Releases](https://github.com/livekit/livekit/releases).
-3. **Roteador WiFi** dedicado de preferência 5GHz para as câmeras.
+1. **O Hub Central (Desktop App):** Um aplicativo de computador que atua como o "cérebro" da operação. Ele roda um servidor próprio em segundo plano, gerenciando a conexão entre todos os celulares e o OBS, garantindo que tudo funcione offline.
+2. **O Aplicativo de Câmera (Mobile Web App):** Interface limpa e inteligente para o celular. Transmite em Simulcast (alta resolução para o OBS, baixa para monitoramento), suporta troca de lentes nativas (ex: Grande Angular) e Zoom via pinça. Funciona em Tela Cheia no iOS via PWA (Adicionar à Tela de Início).
+3. **A Central de Monitoramento:** Uma tela no Desktop (2x2) onde o operador pode monitorar sinais, codecs, FPS e controlar o zoom remotamente.
 
-## Como rodar o projeto
+---
 
-### Passo 1: Iniciar o LiveKit Server
+## 🐧 Como compilar para Linux (Ubuntu, Mint, Debian, etc)
 
-Na pasta raiz do projeto ou na pasta `server/`, inicie o LiveKit usando o script `start.bat`:
+Se você clonar este projeto em uma máquina Linux, siga as instruções abaixo para compilar o aplicativo (`.AppImage` e `.deb`).
 
+**1. Clone e instale as dependências**
 ```bash
-cd server
-start.bat
-```
+git clone https://github.com/kellviny/MulitCam.git
+cd MulitCam
 
-*(Nota: Certifique-se de que o executável `livekit-server` está no seu PATH do sistema, ou coloque-o na mesma pasta)*
-
-### Passo 2: Iniciar as Aplicações
-
-Abra um terminal na raiz do projeto e execute:
-
-```bash
+# Instala as dependências da raiz
 npm install
-npm run dev
+
+# Instala as dependências do aplicativo Desktop
+cd desktop-app
+npm install
+cd ..
 ```
 
-Isso irá iniciar três serviços:
-1. **Token API**: `http://localhost:3001` (Gera tokens JWT)
-2. **Câmera Mobile (PWA)**: `https://<IP-DA-MAQUINA>:3002` (Abra no celular)
-3. **Monitor**: `http://localhost:3000` (Grid de câmeras)
+**2. Baixe e prepare o Servidor LiveKit nativo para Linux**
+O Linux não roda `.exe`. Você precisa baixar o binário nativo do LiveKit na pasta `desktop-app/build/`.
+```bash
+# Certifique-se de estar na raiz do projeto (MulitCam)
+mkdir -p desktop-app/build
 
-### Passo 3: Conectar Câmeras (Smartphones)
+# Baixa o LiveKit do Linux direto do GitHub oficial
+curl -L https://github.com/livekit/livekit/releases/download/v1.5.2/livekit-server_1.5.2_linux_amd64.tar.gz -o livekit.tar.gz
 
-1. No seu celular, conecte no mesmo WiFi do seu computador.
-2. Descubra o IP do seu computador (ex: `192.168.1.100`).
-3. Abra o Safari (iOS) ou Chrome (Android) e acesse:
-   `https://192.168.1.100:3002/?room=live&name=cam1`
-4. Aceite o alerta de segurança do certificado auto-assinado (necessário para a câmera funcionar via HTTPS na rede local).
-5. Permita o uso da câmera. A transmissão irá iniciar (tela fica com status "Ao Vivo" verde).
+# Extrai o arquivo
+tar -xzf livekit.tar.gz livekit-server
 
-### Passo 4: OBS Studio
+# Move para a pasta do Desktop App e dá permissão de execução
+mv livekit-server desktop-app/build/livekit-server
+chmod +x desktop-app/build/livekit-server
 
-Para capturar uma câmera individual no OBS:
-1. Adicione uma nova fonte **Browser (Navegador)**
-2. Defina a URL para: `http://localhost:3000/obs/camera/cam1` (Substitua `cam1` pelo nome da câmera)
-3. Defina **Largura**: 1920 e **Altura**: 1080
-4. Defina **FPS**: 30
-5. Marque a opção: "Atualizar navegador quando a cena se tornar ativa"
-6. O áudio **não** é transmitido pelas câmeras (ele deve vir de sua interface/mesa de som ligada ao OBS).
+# Apaga o zip baixado para limpar
+rm livekit.tar.gz
+```
 
-Para monitorar todas as câmeras:
-Acesse no seu navegador de desktop: `http://localhost:3000`
+**3. Compilar e Gerar os Instaladores**
+```bash
+# Constrói o Monitor e a Câmera Mobile
+npm run build:all
 
-## Arquitetura
+# Empacota o aplicativo Desktop para Linux (gera o .AppImage e .deb)
+cd desktop-app
+npm run dist
+```
 
-- **Token API**: Servidor Node.js para distribuição de acesso seguro ao LiveKit.
-- **Mobile Camera (PWA)**: Utiliza `getUserMedia` com resolução preferida de 1080p, Wake Lock API e `livekit-client` enviando dados via WebRTC sem recodificação agressiva.
-- **Monitor / OBS**: Feito em React, consome streams puros recebidos pelo SFU.
-
-## Sync de Câmeras
-
-A API do servidor despacha continuamente um timestamp de sincronia. A Câmera Mobile exibe o offset (atraso relativo) na interface (`Sync: +X ms`). Um valor verde significa que o tempo de disparo e a compensação de frames está em boa qualidade (<20ms).
+Após o término, os instaladores (`.AppImage` e `.deb`) estarão disponíveis na pasta `desktop-app/release/`.
