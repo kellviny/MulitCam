@@ -13,7 +13,12 @@ import { createProxyServer } from 'http-proxy';
 import { AccessToken } from 'livekit-server-sdk';
 import { autoUpdater } from 'electron-updater';
 
-app.commandLine.appendSwitch('no-sandbox');
+// No Linux Ubuntu, desativar o sandbox e a aceleração de hardware 
+// previne crashes (SIGSEGV) relacionados ao AppArmor e ao Wayland/Nvidia.
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('no-sandbox');
+  app.disableHardwareAcceleration();
+}
 
 // --- Constantes ---
 const LIVEKIT_API_KEY = 'multicam_key';
