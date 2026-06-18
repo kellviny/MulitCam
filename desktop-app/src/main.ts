@@ -13,11 +13,9 @@ import { createProxyServer } from 'http-proxy';
 import { AccessToken } from 'livekit-server-sdk';
 import { autoUpdater } from 'electron-updater';
 
-// No Linux Ubuntu, desativar o sandbox e a aceleração de hardware 
-// previne crashes (SIGSEGV) relacionados ao AppArmor e ao Wayland/Nvidia.
+// No Linux Ubuntu, desativar o sandbox previne crashes relacionados ao AppArmor.
 if (process.platform === 'linux') {
   app.commandLine.appendSwitch('no-sandbox');
-  app.disableHardwareAcceleration();
 }
 
 // --- Constantes ---
@@ -230,7 +228,7 @@ let splashWindow: BrowserWindow | null = null;
 function createSplashWindow() {
   splashWindow = new BrowserWindow({
     width: 500, height: 300,
-    transparent: true,
+    transparent: process.platform !== 'linux',
     frame: false,
     alwaysOnTop: true,
     webPreferences: { nodeIntegration: false }

@@ -10,15 +10,16 @@
     "desktop-app"
   ],
   "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:camera\" \"npm run dev:monitor\"",
     "dev:api": "npm run dev --workspace=token-api",
     "dev:camera": "npm run dev --workspace=mobile-camera",
     "dev:monitor": "npm run dev --workspace=monitor",
-    "dev": "concurrently \"npm run dev:api\" \"npm run dev:camera\" \"npm run dev:monitor\"",
+    "dev:desktop": "npm run build:all && npm run dev --workspace=desktop-app",
     "build:monitor": "cd monitor && npm run build -- --outDir ../desktop-app/dist/monitor",
     "build:mobile-camera": "cd mobile-camera && npm run build -- --outDir ../desktop-app/dist/mobile-camera",
     "build:all": "npm run build:monitor && npm run build:mobile-camera",
     "build": "npm run build:all && npm run dist --workspace=desktop-app",
-    "dev:desktop": "npm run build:all && npm run dev --workspace=desktop-app"
+    "build:linux": "npm run build:all && npm run dist:linux --workspace=desktop-app"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

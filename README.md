@@ -13,50 +13,26 @@ O sistema é dividido em três módulos principais que operam em harmonia atrav�
 
 ## 🐧 Como compilar para Linux (Ubuntu, Mint, Debian, etc)
 
-Se você clonar este projeto em uma máquina Linux, siga as instruções abaixo para compilar o aplicativo (`.AppImage` e `.deb`).
+Antes de começar, certifique-se de que seu sistema tenha as seguintes ferramentas essenciais pré-instaladas:
+- **Node.js** (versão 18 ou superior recomendada) e **npm**
+- **Git**
+- **Ferramentas de compilação base** (No Ubuntu/Mint/Debian: `sudo apt update && sudo apt install build-essential curl`)
 
-**1. Clone e instale as dependências**
+**1. Clone o repositório e instale as dependências**
 ```bash
 git clone https://github.com/kellviny/MulitCam.git
 cd MulitCam
 
-# Instala as dependências da raiz
+# Instala todas as dependências (raiz e submódulos automaticamente)
 npm install
-
-# Instala as dependências do aplicativo Desktop
-cd desktop-app
-npm install
-cd ..
 ```
 
-**2. Baixe e prepare o Servidor LiveKit nativo para Linux**
-O Linux não roda `.exe`. Você precisa baixar o binário nativo do LiveKit na pasta `desktop-app/build/`.
+**2. Compilar e Gerar os Instaladores (.AppImage e .deb)**
+O projeto já possui um script que cuida de tudo! Ele fará o build do Frontend, baixará nativamente o servidor LiveKit para Linux e fará o empacotamento com o Electron-builder. 
+
+Na raiz do projeto, rode apenas um comando:
 ```bash
-# Certifique-se de estar na raiz do projeto (MulitCam)
-mkdir -p desktop-app/build
-
-# Baixa o LiveKit do Linux direto do GitHub oficial (Versão 1.12.0)
-curl -L https://github.com/livekit/livekit/releases/download/v1.12.0/livekit_1.12.0_linux_amd64.tar.gz -o livekit.tar.gz
-
-# Extrai o arquivo
-tar -xzf livekit.tar.gz livekit-server
-
-# Move para a pasta do Desktop App e dá permissão de execução
-mv livekit-server desktop-app/build/livekit-server
-chmod +x desktop-app/build/livekit-server
-
-# Apaga o zip baixado para limpar
-rm livekit.tar.gz
+npm run build:linux
 ```
 
-**3. Compilar e Gerar os Instaladores**
-```bash
-# Constrói o Monitor e a Câmera Mobile
-npm run build:all
-
-# Empacota o aplicativo Desktop para Linux (gera o .AppImage e .deb)
-cd desktop-app
-npm run dist
-```
-
-Após o término, os instaladores (`.AppImage` e `.deb`) estarão disponíveis na pasta `desktop-app/release/`.
+Após a conclusão (pode demorar alguns minutos na primeira vez), os instaladores (`.AppImage` e `.deb`) estarão disponíveis dentro da pasta `desktop-app/release/`.

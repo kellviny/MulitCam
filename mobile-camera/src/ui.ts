@@ -3,6 +3,84 @@ export function setCameraName(name: string) {
   if (el) el.textContent = name;
 }
 
+// --- Tap-to-Focus & Exposure UI (Android only) ---
+
+let focusHideTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Exibe o quadrado de foco na posição exata do toque e o slider de exposição ao lado.
+ * Após 3 segundos sem interação, ambos desaparecem.
+ */
+export function showFocusSquare(clientX: number, clientY: number) {
+  const square = document.getElementById('focus-square') as HTMLElement | null;
+  const sliderWrap = document.getElementById('exposure-wrap') as HTMLElement | null;
+  if (!square) return;
+
+  const size = 72;
+  // Centraliza o quadrado na posição do toque
+  square.style.left = `${clientX - size / 2}px`;
+  square.style.top  = `${clientY - size / 2}px`;
+  square.style.opacity = '1';
+  square.style.transform = 'scale(1)';
+
+  // Slider de exposição aparece à direita do quadrado (mas não sai da tela)
+  if (sliderWrap) {
+    const sliderX = Math.min(window.innerWidth - 44, clientX + size / 2 + 8);
+    const sliderCenterY = clientY - 60; // 60px = metade da altura do slider (120px)
+    sliderWrap.style.left = `${sliderX}px`;
+    sliderWrap.style.top  = `${Math.max(10, sliderCenterY)}px`;
+    sliderWrap.style.opacity = '1';
+    sliderWrap.style.pointerEvents = 'auto';
+  }
+
+  // Auto-ocultar após 3s sem tocar no slider
+  if (focusHideTimer) clearTimeout(focusHideTimer);
+  focusHideTimer = setTimeout(() => hideFocusSquare(), 3000);
+}
+
+export function hideFocusSquare() {
+  const square = document.getElementById('focus-square') as HTMLElement | null;
+  const sliderWrap = document.getElementById('exposure-wrap') as HTMLElement | null;
+  if (square) {
+    square.style.opacity = '0';
+    square.style.transform = 'scale(1.15)';
+  }
+  if (sliderWrap) {
+    sliderWrap.style.opacity = '0';
+    sliderWrap.style.pointerEvents = 'none';
+  }
+  if (focusHideTimer) { clearTimeout(focusHideTimer); focusHideTimer = null; }
+}
+
+/**
+ * Configura o slider de exposição com os limites reais do aparelho.
+ * Só deve ser chamado se o aparelho suportar exposureCompensation.
+ */
+export function initExposureSlider(
+  min: number, max: number, step: number, current: number,
+  onChange: (val: number) => void
+) {
+  const slider = document.getElementById('exposure-slider') as HTMLInputElement | null;
+  const sliderWrap = document.getElementById('exposure-wrap') as HTMLElement | null;
+  if (!slider || !sliderWrap) return;
+
+  slider.min   = String(min);
+  slider.max   = String(max);
+  slider.step  = String(step);
+  slider.value = String(current);
+
+  slider.addEventListener('input', () => {
+    const val = parseFloat(slider.value);
+    onChange(val);
+    // Reinicia o timer de auto-ocultar ao mexer no slider
+    if (focusHideTimer) clearTimeout(focusHideTimer);
+    focusHideTimer = setTimeout(() => hideFocusSquare(), 3000);
+  });
+
+  // Disponibiliza o wrapper mas mantém oculto até o primeiro toque
+  sliderWrap.style.display = 'flex';
+}
+
 export function setCodecDisplay(codec: string, fps: number) {
   const el = document.getElementById('codec-display');
   if (el) {

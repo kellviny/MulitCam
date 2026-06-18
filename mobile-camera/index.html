@@ -130,16 +130,115 @@
       #zoom-overlay.visible {
         opacity: 1;
       }
+
+      /* --- Quadrado de Foco (Tap-to-Focus - Android only) --- */
+      #focus-square {
+        position: fixed;
+        width: 72px;
+        height: 72px;
+        border: 2px solid #facc15;  /* amarelo */
+        border-radius: 6px;
+        box-shadow:
+          0 0 0 1px rgba(0,0,0,0.35),
+          inset 0 0 0 1px rgba(0,0,0,0.15);
+        pointer-events: none;
+        z-index: 20;
+        opacity: 0;
+        transform: scale(1.15);
+        transition: opacity 0.2s ease, transform 0.2s ease;
+        /* Linhas de mira internas */
+        background:
+          /* canto sup-esq */
+          linear-gradient(to right,  #facc15 10px, transparent 10px) top left / 10px 2px no-repeat,
+          linear-gradient(to bottom, #facc15 10px, transparent 10px) top left / 2px 10px no-repeat,
+          /* canto sup-dir */
+          linear-gradient(to left,  #facc15 10px, transparent 10px) top right / 10px 2px no-repeat,
+          linear-gradient(to bottom, #facc15 10px, transparent 10px) top right / 2px 10px no-repeat,
+          /* canto inf-esq */
+          linear-gradient(to right,  #facc15 10px, transparent 10px) bottom left / 10px 2px no-repeat,
+          linear-gradient(to top,    #facc15 10px, transparent 10px) bottom left / 2px 10px no-repeat,
+          /* canto inf-dir */
+          linear-gradient(to left,   #facc15 10px, transparent 10px) bottom right / 10px 2px no-repeat,
+          linear-gradient(to top,    #facc15 10px, transparent 10px) bottom right / 2px 10px no-repeat;
+        border-color: transparent; /* borda real vem do background acima */
+      }
+
+      /* --- Slider de Exposição (ao lado do quadrado de foco) --- */
+      #exposure-wrap {
+        position: fixed;
+        z-index: 20;
+        display: none;  /* só mostra se aparelho suportar */
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+      #exposure-icon {
+        font-size: 14px;
+        color: #facc15;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+        user-select: none;
+      }
+      #exposure-slider {
+        writing-mode: vertical-lr;
+        direction: rtl;
+        -webkit-appearance: slider-vertical;
+        appearance: slider-vertical;
+        width: 28px;
+        height: 120px;
+        accent-color: #facc15;
+        cursor: pointer;
+        touch-action: none;
+      }
       @keyframes pulse {
         0% { opacity: 1; }
         50% { opacity: 0.6; }
         100% { opacity: 1; }
+      }
+      /* --- Rotação automática da UI --- */
+      /* Quando o celular está na vertical, botões ficam na posição normal.
+         Quando em paisagem, a classe .rotated-landscape rotaciona somente
+         os elementos da UI (não o vídeo) para ficarem legíveis. */
+      .rotate-ui-90 #ui-overlay,
+      .rotate-ui-90 #focus-square,
+      .rotate-ui-90 #exposure-wrap,
+      .rotate-ui-90 #zoom-overlay {
+        transform: rotate(90deg);
+        transform-origin: center center;
+      }
+      .rotate-ui-270 #ui-overlay,
+      .rotate-ui-270 #focus-square,
+      .rotate-ui-270 #exposure-wrap,
+      .rotate-ui-270 #zoom-overlay {
+        transform: rotate(-90deg);
+        transform-origin: center center;
+      }
+      .rotate-ui-180 #ui-overlay,
+      .rotate-ui-180 #focus-square,
+      .rotate-ui-180 #exposure-wrap,
+      .rotate-ui-180 #zoom-overlay {
+        transform: rotate(180deg);
+        transform-origin: center center;
+      }
+      #ui-overlay, #focus-square, #exposure-wrap, #zoom-overlay {
+        transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
       }
     </style>
   </head>
   <body>
     <div id="video-container">
       <video id="local-video" autoplay muted playsinline webkit-playsinline></video>
+    </div>
+
+    <!-- Quadrado de foco (Tap-to-Focus - Android only) -->
+    <div id="focus-square"></div>
+
+    <!-- Slider de Exposição (aparece ao lado do quadrado de foco) -->
+    <div id="exposure-wrap">
+      <span id="exposure-icon">☀️</span>
+      <input type="range" id="exposure-slider" min="-2" max="2" step="0.1" value="0" />
     </div>
     <!-- Zoom level pill (shown during zoom gestures) -->
     <div id="zoom-overlay">1.0x</div>
@@ -162,5 +261,63 @@
       </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
+
+    <script>
+      // Rotação automática — apenas Android.
+      // No iOS o Safari já lida com isso nativamente e o transform CSS bugava o layout.
+      (function setupAutoRotation() {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (isIOS) return; // iOS: sem rotação CSS, deixa o Safari cuidar disso
+
+        // Tenta desbloquear orientação no nível do sistema (Android)
+        if (screen.orientation && screen.orientation.unlock) {
+          try { screen.orientation.unlock(); } catch (e) {}
+        }
+
+        const body = document.body;
+        let lastClass = '';
+
+        function applyRotationClass(angle) {
+          const normalized = ((angle % 360) + 360) % 360;
+          let cls = '';
+          if      (normalized >= 45  && normalized < 135) cls = 'rotate-ui-90';
+          else if (normalized >= 135 && normalized < 225) cls = 'rotate-ui-180';
+          else if (normalized >= 225 && normalized < 315) cls = 'rotate-ui-270';
+
+          if (cls === lastClass) return;
+          body.classList.remove('rotate-ui-90', 'rotate-ui-180', 'rotate-ui-270');
+          if (cls) body.classList.add(cls);
+          lastClass = cls;
+        }
+
+        function onDeviceOrientationEvent(e) {
+          const gamma = e.gamma ?? 0;
+          const beta  = e.beta  ?? 0;
+          let angle = 0;
+          if      (gamma > 45)           angle = 90;
+          else if (gamma < -45)          angle = 270;
+          else if (Math.abs(beta) > 135) angle = 180;
+          applyRotationClass(angle);
+        }
+
+        window.addEventListener('deviceorientation', onDeviceOrientationEvent, { passive: true });
+
+        // Fallback via Screen Orientation API
+        function handleOrientationChange() {
+          if (screen.orientation) {
+            applyRotationClass(screen.orientation.angle);
+          } else if (typeof window.orientation === 'number') {
+            applyRotationClass(-window.orientation);
+          }
+        }
+        if (screen.orientation) {
+          screen.orientation.addEventListener('change', handleOrientationChange);
+        }
+        window.addEventListener('orientationchange', handleOrientationChange);
+        handleOrientationChange();
+
+      })();
+    </script>
+
   </body>
 </html>

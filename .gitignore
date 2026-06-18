@@ -1,7 +1,10 @@
 node_modules/
 
+# Ignore build directories EXCEPT desktop-app/build
 dist/
 build/
+!desktop-app/build/
+
 release/
 out/
 .next/
@@ -15,9 +18,10 @@ yarn-error.log*
 multicam-cert.pem
 multicam-key.pem
 
-desktop-app/build/livekit-server.exe
-desktop-app/build/livekit-server
-desktop-app/build/livekit.yaml
+# Explicitly ignore heavy binaries inside desktop-app/build
+desktop-app/build/*.exe
+desktop-app/build/livekit-server*
+desktop-app/build/*.tar.gz
 
 .env
 .env.local
