@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { RemoteParticipant, Track, ConnectionQuality, Room } from 'livekit-client';
+import { RemoteParticipant, Track, ConnectionQuality, Room, RoomEvent } from 'livekit-client';
 
 interface CameraCardProps {
   room: Room | null;
@@ -16,6 +16,25 @@ export default function CameraCard({ room, participant, isFocused, onFocus }: Ca
   const [copyLabel, setCopyLabel] = useState('📋 Copiar URL OBS');
   const [zoomLevel, setZoomLevel] = useState(1);
   const [codecInfo, setCodecInfo] = useState<string>('');
+  const [lensName, setLensName] = useState<string>('');
+
+  useEffect(() => {
+    if (!room) return;
+    const handleData = (payload: Uint8Array, sender?: RemoteParticipant) => {
+      if (sender?.identity === participant.identity) {
+        try {
+          const msg = JSON.parse(new TextDecoder().decode(payload));
+          if (msg.type === 'telemetry') {
+            if (msg.zoom !== undefined) setZoomLevel(msg.zoom);
+            if (msg.lens !== undefined) setLensName(msg.lens);
+            if (msg.codec !== undefined) setCodecInfo(msg.codec.toUpperCase());
+          }
+        } catch(e) {}
+      }
+    };
+    room.on(RoomEvent.DataReceived, handleData);
+    return () => { room.off(RoomEvent.DataReceived, handleData); };
+  }, [room, participant]);
 
   useEffect(() => {
     const attachVideo = () => {
@@ -24,43 +43,15 @@ export default function CameraCard({ room, participant, isFocused, onFocus }: Ca
         pub.videoTrack.attach(videoRef.current);
         setHasVideo(true);
 
-        // Poll getStats to detect codec
-        const interval = setInterval(async () => {
-          const receivers = (pub.videoTrack as any)?._receiver ?? null;
-          const mediaStream = videoRef.current?.srcObject as MediaStream | null;
-          if (mediaStream) {
-            const tracks = mediaStream.getVideoTracks();
-            if (tracks.length > 0) {
-              const pc = (pub.videoTrack as any)?._pc as RTCPeerConnection | undefined;
-              if (pc) {
-                const stats = await pc.getStats(tracks[0]).catch(() => null);
-                if (stats) {
-                  stats.forEach((report) => {
-                    if (report.type === 'inbound-rtp' && report.kind === 'video') {
-                      const mime: string = report.mimeType || '';
-                      if (mime) {
-                        const codec = mime.split('/')[1]?.toUpperCase() || mime;
-                        const fps = Math.round(report.framesPerSecond || 0);
-                        setCodecInfo(`${codec}${fps ? ` · ${fps}fps` : ''}`);
-                      }
-                    }
-                  });
-                }
-              }
-            }
-          }
-        }, 3000);
-
-        return () => clearInterval(interval);
+        // We no longer poll getStats for codec, we rely on the telemetry payload from the mobile app
       } else {
         setHasVideo(false);
-        setCodecInfo('');
       }
     };
 
     attachVideo();
     participant.on('trackSubscribed', attachVideo);
-    participant.on('trackUnsubscribed', () => { setHasVideo(false); setCodecInfo(''); });
+    participant.on('trackUnsubscribed', () => { setHasVideo(false); });
     participant.on('connectionQualityChanged', (q) => setQuality(q));
 
     return () => {
@@ -214,6 +205,17 @@ export default function CameraCard({ room, participant, isFocused, onFocus }: Ca
               textShadow: 'none',
             }}>
               AO VIVO
+            </span>
+          )}
+          {lensName && (
+            <span style={{
+              fontSize: '10px', fontWeight: 700, letterSpacing: '0.05em',
+              color: '#facc15',
+              background: 'rgba(250,204,21,0.2)',
+              padding: '2px 7px', borderRadius: '4px',
+              border: '1px solid rgba(250,204,21,0.4)',
+            }}>
+              {lensName}
             </span>
           )}
           {codecInfo && (

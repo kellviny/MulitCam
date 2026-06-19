@@ -1,6 +1,6 @@
 import { Room, RoomEvent, ConnectionQuality } from 'livekit-client';
-import { setCameraName, setStatus, onFlipCameraClick, onRemoteZoom, setupFullscreen, onFpsToggleClick, setSignalDisplay } from './ui';
-import { setupCameraAndPublish, flipCamera, setZoomLocally, toggleFps } from './camera';
+import { setCameraName, setStatus, onFlipCameraClick, onCycleLensClick, onRemoteZoom, setupFullscreen, onFpsToggleClick, setSignalDisplay } from './ui';
+import { setupCameraAndPublish, flipCamera, cycleLens, setZoomLocally, toggleFps } from './camera';
 
 // Descoberta do IP do servidor (Token API e LiveKit)
 const host = window.location.hostname;
@@ -81,6 +81,7 @@ async function main() {
 
     // 5. Configurar botões
     onFlipCameraClick(() => flipCamera(room));
+    onCycleLensClick(() => cycleLens());
     setupFullscreen();
     onFpsToggleClick(() => toggleFps(room));
 

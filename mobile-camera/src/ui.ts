@@ -81,10 +81,10 @@ export function initExposureSlider(
   sliderWrap.style.display = 'flex';
 }
 
-export function setCodecDisplay(codec: string, fps: number) {
+export function setCodecDisplay(codec: string, fps: number, lensName: string) {
   const el = document.getElementById('codec-display');
   if (el) {
-    el.textContent = `${codec.toUpperCase()} · ${fps}fps`;
+    el.textContent = `${lensName} · ${codec.toUpperCase()} · ${fps}fps`;
   }
 }
 
@@ -123,6 +123,11 @@ export function setSignalDisplay(quality: string) {
 
 export function onFlipCameraClick(callback: () => void) {
   const btn = document.getElementById('btn-flip');
+  if (btn) btn.addEventListener('click', callback);
+}
+
+export function onCycleLensClick(callback: () => void) {
+  const btn = document.getElementById('btn-lens');
   if (btn) btn.addEventListener('click', callback);
 }
 

@@ -6,7 +6,7 @@
   "description": "Sistema de transmissao local",
   "main": "dist/main.js",
   "scripts": {
-    "dev": "tsc && electron .",
+    "dev": "tsc && electron . --no-sandbox --disable-gpu",
     "dist": "tsc && electron-builder --win --config electron-builder.config.js",
     "download:linux": "node build/download.js",
     "dist:linux": "npm run download:linux && tsc && electron-builder --linux --config electron-builder.config.js",

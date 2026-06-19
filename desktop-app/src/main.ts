@@ -218,9 +218,11 @@ function createMainWindow() {
     },
   });
 
-  mainWindow.maximize();
   mainWindow.loadURL(`http://localhost:${HTTP_PORT}`);
-  mainWindow.once('ready-to-show', () => mainWindow?.show());
+  mainWindow.once('ready-to-show', () => {
+    mainWindow?.show();
+    // mainWindow?.maximize(); // Commented out because it causes SIGSEGV on Linux/Wayland with Electron 30
+  });
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
@@ -281,7 +283,9 @@ app.whenReady().then(async () => {
       splashWindow = null;
     }
     
-    autoUpdater.checkForUpdatesAndNotify();
+    if (app.isPackaged) {
+      autoUpdater.checkForUpdatesAndNotify().catch(err => console.log('Auto-update ignorado:', err.message));
+    }
 
   } catch (err) {
     dialog.showErrorBox('Erro fatal', String(err));

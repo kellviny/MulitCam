@@ -1,38 +1,69 @@
 # MultiCam Live System
 
-O **MultiCam Live** é um sistema profissional e de ultra-baixa latência desenvolvido para transformar smartphones (iPhones e Androids) em câmeras sem fio de alta qualidade para transmissões ao vivo. Focado 100% em rede local (Wi-Fi), ele elimina a necessidade de fios e placas de captura, entregando o vídeo diretamente para softwares de transmissão como o **OBS Studio**.
+MultiCam Live is a professional, ultra-low latency system designed to transform smartphones (iPhones and Android devices) into high-quality wireless cameras for live broadcasting. Operating entirely over a local network (Wi-Fi), it eliminates the need for cables and capture cards, delivering video directly to broadcasting software such as OBS Studio.
 
-### Como Funciona:
-O sistema é dividido em três módulos principais que operam em harmonia através da tecnologia **WebRTC (LiveKit)** embutida:
+## Architecture and Components
 
-1. **O Hub Central (Desktop App):** Um aplicativo de computador que atua como o "cérebro" da operação. Ele roda um servidor próprio em segundo plano, gerenciando a conexão entre todos os celulares e o OBS, garantindo que tudo funcione offline.
-2. **O Aplicativo de Câmera (Mobile Web App):** Interface limpa e inteligente para o celular. Transmite em Simulcast (alta resolução para o OBS, baixa para monitoramento), suporta troca de lentes nativas (ex: Grande Angular) e Zoom via pinça. Funciona em Tela Cheia no iOS via PWA (Adicionar à Tela de Início).
-3. **A Central de Monitoramento:** Uma tela no Desktop (2x2) onde o operador pode monitorar sinais, codecs, FPS e controlar o zoom remotamente.
+The system is structured into three main modules that operate harmoniously using embedded WebRTC (LiveKit) technology:
 
----
+1. **Central Hub (Desktop Application):** A desktop application that acts as the core of the operation. It runs an internal background server, managing the connection between all mobile devices and the broadcasting software, ensuring complete offline functionality.
+2. **Camera Application (Mobile Web App):** A streamlined interface for the smartphone. It transmits using Simulcast (high resolution for the broadcast, lower resolution for monitoring), supports native lens switching (e.g., Ultra Wide), and allows pinch-to-zoom. It functions in Full Screen mode on iOS via PWA (Progressive Web App).
+3. **Monitoring Center:** A 2x2 grid interface within the Desktop Hub where the operator can monitor incoming signals, codecs, frame rates, and control zoom remotely.
 
-## 🐧 Como compilar para Linux (Ubuntu, Mint, Debian, etc)
+## Installation and Execution Guide for End Users
 
-Antes de começar, certifique-se de que seu sistema tenha as seguintes ferramentas essenciais pré-instaladas:
-- **Node.js** (versão 18 ou superior recomendada) e **npm**
+The application is distributed as a standalone executable for both Windows and Linux. Below are the instructions to run the application in each operating system.
+
+### Windows
+
+1. **Download:** Obtain the latest `.exe` installer (e.g., `MultiCam-Desktop-Setup.exe`).
+2. **Installation:** Double-click the installer and follow the standard installation prompts.
+3. **Execution:** After installation, launch the "MultiCam Desktop" application from the Start Menu or desktop shortcut.
+4. **Firewall Permissions:** Upon first execution, Windows Defender or your firewall may prompt for network access. You must allow access for both Private and Public networks to ensure the desktop application can communicate with smartphones on the local Wi-Fi.
+
+### Linux
+
+The application is distributed as an AppImage, a universal package format for Linux.
+
+1. **Download:** Obtain the latest `.AppImage` file (e.g., `MultiCam-Desktop.AppImage`).
+2. **Execution Permissions:** Before running the AppImage, you must grant it execution permissions.
+   - **Via Graphical Interface:** Right-click the `.AppImage` file, select "Properties", navigate to the "Permissions" tab, and check the box that says "Allow executing file as program".
+   - **Via Terminal:** Open a terminal in the folder where the file is located and run:
+     `chmod +x MultiCam-Desktop.AppImage`
+3. **Execution:** Double-click the file to open it, or run it via terminal:
+   `./MultiCam-Desktop.AppImage`
+4. **Note on Graphics Integration:** The application is optimized to run smoothly on modern Linux distributions (both Wayland and X11). If you encounter graphics issues, ensure your system is fully updated.
+
+## Compiling from Source
+
+For developers who wish to compile the application from source code.
+
+### Prerequisites
+- **Node.js** (Version 18 or higher recommended) and **npm**
 - **Git**
-- **Ferramentas de compilação base** (No Ubuntu/Mint/Debian: `sudo apt update && sudo apt install build-essential curl`)
+- **Base Build Tools** (On Ubuntu/Mint/Debian: `sudo apt update && sudo apt install build-essential curl`)
 
-**1. Clone o repositório e instale as dependências**
+### Building for Linux
+
+1. Clone the repository and install dependencies:
 ```bash
 git clone https://github.com/kellviny/MulitCam.git
 cd MulitCam
-
-# Instala todas as dependências (raiz e submódulos automaticamente)
 npm install
 ```
 
-**2. Compilar e Gerar os Instaladores (.AppImage e .deb)**
-O projeto já possui um script que cuida de tudo! Ele fará o build do Frontend, baixará nativamente o servidor LiveKit para Linux e fará o empacotamento com o Electron-builder. 
-
-Na raiz do projeto, rode apenas um comando:
+2. Compile and generate the installers (.AppImage and .deb):
 ```bash
-npm run build:linux
+cd desktop-app
+npm run dist:linux
 ```
+The final installers will be available in the `desktop-app/release/` directory.
 
-Após a conclusão (pode demorar alguns minutos na primeira vez), os instaladores (`.AppImage` e `.deb`) estarão disponíveis dentro da pasta `desktop-app/release/`.
+### Building for Windows
+
+To build for Windows, ensure you are on a Windows machine or using cross-compilation tools.
+```bash
+cd desktop-app
+npm run dist
+```
+The `.exe` installer will be available in the `desktop-app/release/` directory.

@@ -10,6 +10,27 @@ let currentFps = 30;
 let zoomMin = 1;
 let zoomMax = 5;
 
+// Lenses and Telemetry state
+export let currentCodec = 'h264';
+export let currentLensName = 'Câmera Principal';
+interface Lens { deviceId: string; label: string; }
+let availableLenses: Lens[] = [];
+let currentLensIndex = -1;
+let currentRoom: Room | null = null;
+
+// Telemetry Broadcast
+export function broadcastTelemetry() {
+  if (!currentRoom || !currentRoom.localParticipant) return;
+  const payload = JSON.stringify({
+    type: 'telemetry',
+    zoom: currentZoomVal,
+    lens: currentLensName,
+    codec: currentCodec
+  });
+  const encoder = new TextEncoder();
+  currentRoom.localParticipant.publishData(encoder.encode(payload), { reliable: true });
+}
+
 // Android-only: true se o dispositivo é iOS (bloqueia features exclusivas do Android)
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
@@ -53,16 +74,61 @@ function getBestCodec(): VideoCodec {
   return 'h264';
 }
 
+async function loadLenses() {
+  if (availableLenses.length > 0) return;
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    availableLenses = devices
+      .filter(d => d.kind === 'videoinput' && !d.label.toLowerCase().includes('front') && !d.label.toLowerCase().includes('frontal'))
+      .map(d => {
+        let label = d.label || 'Câmera Traseira';
+        // Simplifica nomes do iOS se possível
+        if (label.includes('Ultra Wide')) label = 'Ultra Angular';
+        else if (label.includes('Telephoto')) label = 'Zoom (Tele)';
+        else if (label.includes('Wide')) label = 'Principal (Wide)';
+        return { deviceId: d.deviceId, label };
+      });
+  } catch(e) { console.warn('Erro ao listar lentes', e); }
+}
+
+export async function cycleLens() {
+  if (!currentRoom) return;
+  if (availableLenses.length <= 1) return;
+  currentLensIndex = (currentLensIndex + 1) % availableLenses.length;
+  facingMode = 'environment';
+  await publishCamera(currentRoom);
+}
+
 async function publishCamera(room: Room) {
+  currentRoom = room;
   if (currentVideoTrack) {
     await room.localParticipant.unpublishTrack(currentVideoTrack);
     currentVideoTrack.stop();
   }
 
-  currentVideoTrack = await createLocalVideoTrack({
-    facingMode,
+  let options: any = {
     resolution: { width: 1920, height: 1080, frameRate: currentFps }
-  });
+  };
+  
+  if (facingMode === 'user') {
+    options.facingMode = 'user';
+    currentLensName = 'Câmera Frontal';
+  } else if (currentLensIndex !== -1 && availableLenses.length > 0) {
+    options.deviceId = { exact: availableLenses[currentLensIndex].deviceId };
+    currentLensName = availableLenses[currentLensIndex].label;
+  } else {
+    options.facingMode = 'environment';
+    currentLensName = 'Câmera Principal';
+  }
+
+  currentVideoTrack = await createLocalVideoTrack(options);
+
+  await loadLenses();
+  // Se carregou as lentes agora e era a primeira vez, seta o indice 0 e pega o nome correto
+  if (facingMode === 'environment' && currentLensIndex === -1 && availableLenses.length > 0) {
+    currentLensIndex = 0;
+    currentLensName = availableLenses[0].label;
+  }
 
   const videoEl = document.getElementById('local-video') as HTMLVideoElement;
   if (videoEl) currentVideoTrack.attach(videoEl);
@@ -81,7 +147,9 @@ async function publishCamera(room: Room) {
     degradationPreference: 'maintain-resolution',
   });
 
-  setCodecDisplay(codec, currentFps);
+  currentCodec = codec.toUpperCase();
+  setCodecDisplay(currentCodec, currentFps, currentLensName);
+  broadcastTelemetry();
 }
 
 function setupZoomGestures() {
@@ -99,6 +167,7 @@ function setupZoomGestures() {
           zoomMax = capabilities.zoom.max;
           currentZoomVal = (mediaTrack.getSettings() as any).zoom || zoomMin;
           showZoomLevel(currentZoomVal);
+          broadcastTelemetry();
         }
       }
 
@@ -243,6 +312,7 @@ function applyZoom(val: number, track: MediaStreamTrack) {
   track.applyConstraints({ advanced: [{ zoom: z } as any] })
     .catch(e => console.warn('Zoom falhou', e));
   showZoomLevel(z);
+  broadcastTelemetry();
 }
 
 export function setZoomLocally(val: number) {
@@ -253,6 +323,9 @@ export function setZoomLocally(val: number) {
 
 export async function flipCamera(room: Room) {
   facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  if (facingMode === 'user') {
+    currentLensIndex = -1; // reset back camera index when flipping to front
+  }
   await publishCamera(room);
 }
 

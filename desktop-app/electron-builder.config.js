@@ -27,7 +27,8 @@ module.exports = {
     ]
   },
   linux: {
-    target: ['AppImage', 'deb']
+    target: ['AppImage', 'deb'],
+    icon: 'build/icon.png'
   },
   nsis: {
     oneClick: false,
